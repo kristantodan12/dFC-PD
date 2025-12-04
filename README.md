@@ -89,3 +89,57 @@ If you want to run the app locally:
 
 ## 📁 Repository Structure
 
+```
+dfc-pd/
+├── app.R                      # Main application file
+├── ui.r                       # User interface definition
+├── server.r                   # Server logic
+├── helper_functions.r         # Helper functions for data processing
+├── Data_script.csv           # Main dataset
+├── Information.csv           # Column information and descriptions
+├── similarity_matrices.RData # Pre-computed similarity matrices for network
+└── README.md                 # This file
+```
+
+## 💡 Usage Tips
+
+- **Filtering**: Use the sidebar filters to narrow down studies. Filters are hierarchical (Study Design → Primary Focus → Focus Specification)
+- **Tables**: Click column headers to sort; use search boxes at the top of each column for fine-grained filtering
+- **Plots**: Hover over plots for detailed information; most plots are interactive
+- **Network**: In the Network of Studies tab, adjust edge metrics and node properties to explore different aspects of study relationships
+- **DOI Links**: Throughout the app, DOI values are clickable and open papers in a new tab
+
+## 📊 Data Sources
+
+The dataset includes peer-reviewed studies examining dynamic functional connectivity in Parkinson's Disease, with comprehensive coding of:
+- Study design and participant characteristics
+- MRI acquisition parameters
+- Preprocessing pipelines
+- dFC analysis methods
+- Brain networks and findings
+- Proposed biomarkers and limitations
+
+## 🛠️ Technical Details
+
+### Built With
+- **R Shiny** - Web application framework
+- **bslib** - Modern UI theming
+- **plotly** - Interactive visualizations
+- **DT** - Interactive data tables
+- **visNetwork** - Network visualizations
+- **igraph** - Network analysis
+
+### System Requirements
+- R version 4.0 or higher
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+- Internet connection for online access
+
+
+## 📚 Citation
+
+If you use this tool or dataset in your research, please cite:
+
+```
+Will be updated soon.
+```
+
