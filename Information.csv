@@ -1,0 +1,86 @@
+Groups,Information,Description
+1. Publication info,Label,"A unique short identifier (e.g., AuthorYear) for each study."
+,Authors,The authors of the publication.
+,Year,The year the study was published.
+,Journal,The name of the journal where the study was published.
+,DOI,The Digital Object Identifier for the article.
+2. Study Population,N_sample_PD,The total number of participants with Parkinson's Disease (PD).
+,Age_PD_Min,The minimum age of the PD participants.
+,Age_PD_Max,The maximum age of the PD participants.
+,Age_PD_Mean,The average age of the PD participants.
+,Age_PD_SD,The standard deviation of the PD participants' age.
+,UPDRS_ON_Mean,The average UPDRS score for PD patients in their 'ON' medication state.
+,UPDRS_ON_SD,The standard deviation of the 'ON' medication UPDRS score.
+,UPDRS_ON_Median,The median UPDRS score for PD patients in their 'ON' medication state.
+,UPDRS_ON_IQR,The interquartile range of the 'ON' medication UPDRS score.
+,UPDRS_OFF_Mean,The average UPDRS score for PD patients in their 'OFF' medication state.
+,UPDRS_OFF_SD,The standard deviation of the 'OFF' medication UPDRS score.
+,UPDRS_OFF_Median,The median UPDRS score for PD patients in their 'OFF' medication state.
+,UPDRS_OFF_IQR,The interquartile range of the 'OFF' medication UPDRS score.
+,HnY_Mean,"The average Hoehn & Yahr stage, indicating PD severity."
+,HnY_SD,The standard deviation of the Hoehn & Yahr stage.
+,HnY_Median,The median Hoehn & Yahr stage.
+,HnY_IQR,The interquartile range of the Hoehn & Yahr stage.
+,HnY_Min,The minimum Hoehn & Yahr stage.
+,HnY_Max,The maximum Hoehn & Yahr stage.
+,Med_Status_Scan,"The medication status of PD patients at the time of the fMRI scan (e.g., ON, OFF)."
+,N_HC,The total number of Healthy Control (HC) participants.
+,Age_HC_mean,The average age of the HC participants.
+,Age_HC_sd,The standard deviation of the HC participants' age.
+,Study_Design,"The overall design of the study (e.g., Cross-sectional, Longitudinal)."
+,Primary_Focus,"The main topic of the investigation (e.g., Motor Symptoms, Cognitive Impairment)."
+,Focus_Specification,"A detailed sub-category of the primary focus (e.g., Tremor, FOG, Apathy)."
+,Data_Source,"The origin of the dataset (e.g., Public, Private/In-house)."
+,Data_Source_Institution,"The specific database or institution that provided the data (e.g., PPMI)."
+3. Methods,Paradigm_Type,"The type of fMRI experiment performed (e.g., Resting-state, Task-based)."
+,Task_Description,"A brief description of the task, if one was used."
+,TR_ms,Repetition Time (the time to acquire one fMRI volume) in milliseconds.
+,TE_ms,Echo Time (the time to measure the fMRI signal) in milliseconds.
+,Number_Volumes,The total number of brain volumes collected during the scan.
+,Length_Scan_Minutes,The total duration of the fMRI scan in minutes.
+,Voxel_Size,"The dimensions of the fMRI voxels (e.g., 3x3x3 mm)."
+,Field_Strength,The magnetic field strength of the MRI scanner in Tesla (T).
+,Motion_Params,"The number of head motion parameters regressed (e.g., 6p, 24p)."
+,Regress_WM_CSF,Whether White Matter & Cerebrospinal Fluid signals were regressed out (Yes/No).
+,Regress_CompCor,Whether CompCor denoising was used (Yes/No).
+,Regress_ICA_AROMA,Whether ICA-AROMA denoising was used (Yes/No).
+,Detrending,Whether signal detrending was applied (Yes/No).
+,Despiking,Whether signal despiking was applied (Yes.No).
+,Scrubbing,Whether motion scrubbing (frame censoring) was applied (Yes/No).
+,Exclusion_Mean_FD_mm,The Mean Framewise Displacement threshold (in mm) for subject exclusion.
+,Exclusion_Max_FD_mm,The Maximum Framewise Displacement threshold (in mm) for subject exclusion.
+,Exclusion_Max_Translation_mm,The Maximum Translation threshold (in mm) for subject exclusion.
+,Exclusion_Max_Rotation_deg,The Maximum Rotation threshold (in degrees) for subject exclusion.
+,Exclusion_Outlier_Frames_percent,The threshold for the percentage of outlier frames for subject exclusion.
+,Exclusion_Other,Any other or qualitative criteria used for motion exclusion.
+,GSR,Whether Global Signal Regression was performed (Yes/No).
+,Spatial_Smoothing,The kernel size (FWHM in mm) used for spatial smoothing.
+,Filter_Type,"The type of temporal filtering applied (e.g., Band-pass, Low-pass)."
+,Low_Cutoff_Hz,The low-frequency cutoff (in Hz) for the temporal filter.
+,High_Cutoff_Hz,The high-frequency cutoff (in Hz) for the temporal filter.
+,Filter_Step_2_Type,"The type of a second temporal filtering step, if applied."
+,Low_Cutoff_2_Hz,The low-frequency cutoff for a second filtering step.
+,High_Cutoff_2_Hz,The high-frequency cutoff for a second filtering step.
+,Brain_Mapping,"The level of analysis (e.g., Areas, Networks, Whole Brain)."
+,Number_Networks,The number of networks used in a network-based analysis.
+,Number_Areas,The number of areas or ROIs defined by the parcellation.
+,Network_Areas,A list of the specific brain networks or areas investigated.
+,Parcellation_Methods,"The brain atlas or method used to define regions (e.g., AAL, Schaefer)."
+,dFC_Methods,"The computational method used to measure dFC (e.g., Sliding window, d-CAPs)."
+,Window_Size_Seconds,The length of the sliding window (in seconds) for dFC analysis.
+,Window_Shift_Second,The step size (in seconds) the sliding window moved by.
+,Clustering_Methods,"The algorithm used to identify brain states (e.g., k-means)."
+,Number_States,The final number of dFC states identified.
+,Number_States_Criteria,"The method used to select the optimal number of states (e.g., Silhouette index)."
+,State_Features,"The dynamic properties extracted from the states (e.g., Dwell time, Fraction time)."
+,Graph_Measures,"Any graph theory metrics computed (e.g., Global efficiency, Modularity)."
+4. Results,Data_Availability,Information on whether the raw data is publicly available.
+,Code_Availability,Information on whether the analysis code is publicly available.
+,Identified_States_Description,A qualitative description of the identified brain states.
+,Integration_State_Findings,Specific findings related to highly integrated brain states.
+,Segregation_State_Findings,Specific findings related to highly segregated brain states.
+,State_Pattern_Conclusion,The study's primary conclusion about integration vs. segregation.
+,Transition_Findings,Specific findings related to the transitions between brain states.
+,Transition_Pattern_Conclusion,The study's primary conclusion about the patterns of state transitions.
+,Proposed_Biomarker_Summary_Cleaned,The key finding or proposed biomarker summarized from the study.
+,Limitations,The study's limitations as reported by the authors.

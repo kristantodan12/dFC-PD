@@ -1,0 +1,50 @@
+# .gitignore
+# R History and Session Data
+.Rhistory
+.RData
+.Rapp.history
+
+# R Session Data files
+*.RData
+*.rda
+
+# User-specific files
+.Ruserdata
+
+# OAuth tokens (shinyapps.io deployment)
+.httr-oauth
+.httr-oauth2
+
+# Shinyapps.io deployment credentials and config
+rsconnect/
+.rsconnect/
+*.dcf
+
+# Packrat (R package management)
+packrat/lib*/
+packrat/src/
+
+# renv (R environment management)
+renv/
+.Rprofile
+
+# Temporary files
+*~
+*.swp
+*.swo
+*#
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.Rproj
+*.Rproj.user
+
+# Output files
+*.log
+*.out
