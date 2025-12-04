@@ -1,7 +1,6 @@
 # .gitignore
 # R History and Session Data
 .Rhistory
-.RData
 .Rapp.history
 
 # R Session Data files
