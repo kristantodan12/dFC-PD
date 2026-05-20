@@ -9,6 +9,7 @@ library(DT)
 library(wordcloud2)
 library(visNetwork)
 library(igraph)
+library(shinyjs)
 
 # Load helper functions
 source("helper_functions.r")
@@ -17,45 +18,187 @@ source("helper_functions.r")
 data <- load_and_clean_data("Data_script.csv")
 
 # Define UI
-ui <- page_navbar(
+ui <- navbarPage(
   title = "DynaPD Interactive App",
+  id = "navBar",
+  collapsible = TRUE,
+  windowTitle = "DynaPD - Dynamic Functional Connectivity in Parkinson's Disease",
+  position = "fixed-top",
+  
+  # Custom CSS and JavaScript
   theme = bs_theme(
     bootswatch = "cosmo",
     base_font = font_google("Open Sans"),
     heading_font = font_google("Roboto Slab")
   ),
-  bg = "#f8f9fa",
+  
+  tags$head(
+    tags$style(HTML('
+      .navbar {
+        min-height: 70px;
+        background-color: #FFFFFF;
+        border-bottom: 4px solid #3498db;
+      }
+      .navbar-brand {
+        height: 70px;
+        padding: 10px 15px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #3498db !important;
+      }
+      .navbar-nav > li > a {
+        padding-top: 25px;
+        padding-bottom: 25px;
+        color: #3498db;
+        font-size: 14px;
+        font-weight: bold;
+      }
+      .navbar-nav > li > a:hover {
+        color: #2c3e50 !important;
+      }
+      body {
+        padding-top: 100px;
+      }
+      .navbar-nav { float: right !important; }
+      .hidden-tab { display: none !important; }
+      .custom-home-icon {
+        cursor: pointer;
+        padding: 25px;
+        display: flex;
+        align-items: center;
+      }
+      .custom-home-icon i {
+        margin-right: 5px;
+      }
+      .custom-home-icon span {
+        font-weight: bold;
+        color: #3498db;
+        font-size: 14px;
+      }
+      .custom-home-icon:hover {
+        color: #2c3e50 !important;
+      }
+    ')),
+    tags$script(HTML('
+      $(document).ready(function() {
+        $(".navbar-nav > li").addClass("hidden-tab");
+        
+        // Add custom home icon with text
+        $(".navbar-nav").prepend(\'<li class="custom-home-icon"><i class="fa fa-home"></i><span>HOME</span></li>\');
+        
+        // Click event for custom home icon
+        $(".custom-home-icon").click(function() {
+          var homeTab = $(".navbar-nav > li > a[data-value=\'home\']");
+          homeTab.click();
+        });
+      });
+    '))
+  ),
+  
+  tags$head(tags$script(HTML('
+    function fakeClick(tabName) {
+      var dropdownList = document.getElementsByTagName("a");
+      for (var i = 0; i < dropdownList.length; i++) {
+        var link = dropdownList[i];
+        if(link.getAttribute("data-value") == tabName) {
+          link.click();
+        }
+      }
+    }
+    
+    var sendToShiny = function(label) {
+      Shiny.onInputChange("node_clicked", label);
+    };
+  '))),
   
   # ============================================================================
-  # TAB 1: FULL DATASET (moved to first tab)
+  # TAB 0: HOME
   # ============================================================================
-  nav_panel(
-    title = "Full Dataset",
+  tabPanel("Home", value = "home", icon = icon("home"),
+    useShinyjs(),
+    fluidRow(
+      align = "left",
+      column(
+        width = 12,
+        wellPanel(
+          style = "background-color: #f0f0f0; color: #000; padding: 20px; border: 1px solid #ddd;",
+          tags$h3("DynaPD Interactive App:", style = "color: #3498db; font-weight: bold;"),
+          tags$h4("Exploring Dynamic Functional Connectivity in Parkinson's Disease",
+                  style = "color: #2c3e50; font-weight: normal;"),
+          tags$h5("This interactive app allows you to explore dynamic functional connectivity (dFC) studies in Parkinson's Disease through a comprehensive systematic review of the literature.",
+                  style = "color: #000; font-weight: normal;"),
+          tags$h5("Click on the nodes below to explore the different features of this app:", style = "color: #000;"),
+          HTML("<br>")
+        )
+      )
+    ),
+    
+    fluidRow(
+      column(8,
+        visNetworkOutput("network_home", width = "100%", height = "600px")
+      ),
+      column(4,
+        align = "left",
+        uiOutput("node_description")
+      )
+    )
+  ),
+  
+  # ============================================================================
+  # TAB 1: FULL DATASET
+  # ============================================================================
+  tabPanel("Full Dataset", value = "full_dataset", icon = icon("database"),
     navset_card_tab(
+      id = "full_dataset_tabs",
       title = "Complete Data and Information",
       nav_panel(
         title = "Dataset",
         card(
-          card_header("Complete Dataset (Searchable & Filterable)"),
+          card_header("PRISMA Flow Diagram"),
           div(
             class = "text-muted",
             style = "font-size: 12px; line-height: 1.35; margin: 4px 0 8px;",
             HTML(
               paste0(
-                "<b>How to use this table</b><br>",
-                "• Use the per-column search boxes at the top of the table to filter by any field (e.g., Authors, Year, Journal, Primary/Focus Specification).<br>",
-                "• Click a column header to sort ascending/descending; hold Shift and click multiple headers for multi-column sorting.<br>",
-                "• Scroll horizontally to view all columns; left-most columns are fixed for easier navigation.<br>",
-                "• DOI values are clickable and open in a new tab."
+                "<b>Study Selection Process</b><br>",
+                "• This diagram shows the systematic review process following PRISMA guidelines.<br>",
+                "• It illustrates how studies were identified, screened, and included in the final dataset."
               )
             )
           ),
-          DTOutput("table_full_dataset")
+          div(
+            style = "text-align: center; padding: 20px;",
+            img(src = "PRISMA_diagram.png", style = "max-width: 40%; height: auto;")
+          )
+        )
+      ),
+      nav_panel(
+        title = "Data Explorer",
+        card(
+          full_screen = TRUE,
+          style = "min-height: 800px;",
+          card_header("Interactive Data Explorer"),
+          div(
+            class = "text-muted",
+            style = "font-size: 12px; line-height: 1.35; margin: 4px 0 8px;",
+            HTML(
+              paste0(
+                "<b>Dynamic Filtering</b><br>",
+                "• Use the sliders and dropdowns at the top of each column to filter data dynamically.<br>",
+                "• Numeric variables (e.g., Length_Scan_Minutes, TR_ms) have range sliders.<br>",
+                "• Categorical variables have dropdown menus for selection.<br>",
+                "• Click column headers to sort; combine filters for precise data exploration."
+              )
+            )
+          ),
+          DTOutput("table_data_explorer")
         )
       ),
       nav_panel(
         title = "Coded Information",
         card(
+          full_screen = TRUE,
+          style = "min-height: 800px;",
           card_header("Column Information and Descriptions"),
           div(
             class = "text-muted",
@@ -77,8 +220,7 @@ ui <- page_navbar(
   # ============================================================================
   # TAB 2: STUDY OVERVIEW
   # ============================================================================
-  nav_panel(
-    title = "Study Overview",
+  tabPanel("Study Overview", value = "study_overview", icon = icon("chart-bar"),
     layout_sidebar(
       sidebar = sidebar(
         title = "Filters",
@@ -179,6 +321,14 @@ ui <- page_navbar(
           plotlyOutput("plot_med_status_scan", height = "350px")
         ),
         card(
+          card_header("Paradigm Type Distribution"),
+          plotlyOutput("plot_paradigm_type", height = "350px")
+        ),
+        card(
+          card_header("Sex Distribution (% Male in PD Samples)"),
+          plotlyOutput("plot_sex_distribution", height = "350px")
+        ),
+        card(
           card_header("Filtered Studies"),
           DTOutput("table_overview_studies")
         )
@@ -189,9 +339,9 @@ ui <- page_navbar(
   # ============================================================================
   # TAB 3: METHOD EXPLORER
   # ============================================================================
-  nav_panel(
-    title = "Method Explorer",
+  tabPanel("Method Explorer", value = "method_explorer", icon = icon("microscope"),
     navset_card_tab(
+      id = "method_explorer_tabs",
       title = "Explore Methodological Approaches",
       
       # Sub-tab A: MRI Acquisition & Preprocessing
@@ -230,6 +380,15 @@ ui <- page_navbar(
               max = max(data$N_sample_PD, na.rm = TRUE),
               value = c(min(data$N_sample_PD, na.rm = TRUE), max(data$N_sample_PD, na.rm = TRUE)),
               step = 1
+            ),
+            sliderInput(
+              "mri_tr_range",
+              "Repetition Time (TR):",
+              min = 0,
+              max = 4000,
+              value = c(0, 4000),
+              step = 100,
+              post = " ms"
             ),
             selectInput(
               "mri_study_design_filter",
@@ -336,6 +495,15 @@ ui <- page_navbar(
               max = max(data$N_sample_PD, na.rm = TRUE),
               value = c(min(data$N_sample_PD, na.rm = TRUE), max(data$N_sample_PD, na.rm = TRUE)),
               step = 1
+            ),
+            sliderInput(
+              "dfc_tr_range",
+              "Repetition Time (TR):",
+              min = 0,
+              max = 4000,
+              value = c(0, 4000),
+              step = 100,
+              post = " ms"
             ),
             selectInput(
               "dfc_study_design_filter",
@@ -461,13 +629,13 @@ ui <- page_navbar(
   # ============================================================================
   # TAB 4: FINDING EXPLORER
   # ============================================================================
-  nav_panel(
-    title = "Finding Explorer",
+  tabPanel("Finding Explorer", value = "finding_explorer", icon = icon("search"),
     navset_card_tab(
+      id = "finding_explorer_tabs",
       title = "Explore Study Findings",
       # Subtab: State Features
       nav_panel(
-        title = "State Findings",
+        title = "State Features",
         layout_sidebar(
           sidebar = sidebar(
             title = "Filters",
@@ -548,9 +716,8 @@ ui <- page_navbar(
                 paste0(
                   "<b>What you can do here</b><br>",
                   "• Filter by year, sample size (PD), study design, primary focus, and focus specification.<br>",
-                  "• Word cloud shows common state descriptions across the filtered set.<br>",
-                  "• Use the 'Finding to Explore' switch to view variability for <i>State</i> vs. <i>Transition</i> categories.<br>",
-                  "• Click a bar to populate the detailed table below with matching papers (DOIs are clickable)."
+                  "• Use the 'Finding to Explore' dropdown to view either <i>State Pattern Conclusions</i> or <i>State Transition Patterns</i>.<br>",
+                  "• Click a bar in the chart to populate the detailed table below with matching papers (DOIs are clickable)."
                 )
               )
             ),
@@ -584,21 +751,17 @@ ui <- page_navbar(
           div(
             style = "overflow-y: auto; max-height: calc(100vh - 100px); padding-right: 12px;",
             card(
-              card_header("Most Common State Descriptions"),
-              wordcloud2Output("state_desc_wordcloud", height = "350px")
-            ),
-            card(
               card_header("Exploring Finding Variability"),
               selectInput(
                 "findings_variability_type",
                 "Finding to Explore:",
                 choices = c(
-                  "State Patterns (Strongly-Connected vs. Sparsely-Connected)" = "state",
+                  "State Pattern Conclusions" = "state",
                   "State Transition Patterns" = "transition"
                 ),
                 selected = "state"
               ),
-              plotlyOutput("findings_variability_plot", height = "300px"),
+              plotlyOutput("findings_variability_plot", height = "400px"),
               DTOutput("findings_detail_table")
             )
           )
@@ -717,10 +880,9 @@ ui <- page_navbar(
   ),
   
   # ============================================================================
-  # TAB 5: NETWORK OF STUDIES (reverted to previous version)
+  # TAB 5: NETWORK OF STUDIES
   # ============================================================================
-  nav_panel(
-    title = "Network of Studies",
+  tabPanel("Network of Studies", value = "network_of_studies", icon = icon("project-diagram"),
     layout_sidebar(
       sidebar = sidebar(
         title = "Network Controls",
@@ -788,6 +950,91 @@ ui <- page_navbar(
       card(
         card_header("Interactive Network Visualization"),
         visNetwork::visNetworkOutput("study_network_plot", height = "700px")
+      )
+    )
+  ),
+  
+  # ============================================================================
+  # TAB 6: CONTRIBUTE
+  # ============================================================================
+  tabPanel("Contribute", value = "contribute", icon = icon("upload"),
+    layout_sidebar(
+      sidebar = sidebar(
+        title = "Data Submission",
+        width = 350,
+        div(
+          class = "text-muted",
+          style = "font-size: 12px; line-height: 1.35; margin-bottom: 12px;",
+          HTML(
+            paste0(
+              "<b>How to contribute</b><br>",
+              "• Download the CSV template below with all required column headers.<br>",
+              "• Fill in your study data following the template structure.<br>",
+              "• Upload your completed CSV file and submit.<br>",
+              "• Our team will manually verify the data before publishing it live."
+            )
+          )
+        ),
+        downloadButton(
+          "download_template",
+          "Download CSV Template",
+          class = "btn-info",
+          style = "width: 100%; margin-bottom: 15px;"
+        ),
+        fileInput(
+          "upload_contribution",
+          "Upload Completed CSV",
+          accept = c(".csv"),
+          buttonLabel = "Browse...",
+          placeholder = "No file selected"
+        ),
+        actionButton(
+          "submit_contribution",
+          "Submit Contribution",
+          class = "btn-primary",
+          style = "width: 100%;",
+          icon = icon("paper-plane")
+        )
+      ),
+      div(
+        style = "overflow-y: auto; max-height: calc(100vh - 100px);",
+        layout_column_wrap(
+          width = 1/2,
+          card(
+            card_header(icon("envelope"), " Contact Us"),
+            div(
+              style = "padding: 15px; line-height: 1.6;",
+              HTML(
+                paste0(
+                  "<p>For inquiries, questions, or to report issues, please contact:</p>",
+                  "<p style='font-size: 16px; color: #3498db;'>",
+                  "<i class='fa fa-envelope'></i> <a href='mailto:daniel.kristanto@uol.de' style='text-decoration: none;'>daniel.kristanto@uol.de</a>",
+                  "</p>",
+                  "<p>We welcome feedback and collaboration opportunities!</p>"
+                )
+              )
+            )
+          ),
+          card(
+            card_header(icon("book"), " Cite Our Work"),
+            div(
+              style = "padding: 15px; line-height: 1.6;",
+              HTML(
+                paste0(
+                  "<p><strong>Preprint Citation:</strong></p>",
+                  "<p style='font-size: 13px; background-color: #f8f9fa; padding: 12px; border-left: 4px solid #3498db;'>",
+                  "Kristanto, D., et al. (2025). Dynamic Functional Connectivity in Parkinson's Disease: A Systematic Review. <em>bioRxiv</em>.",
+                  "</p>",
+                  "<p style='margin-top: 15px;'>",
+                  "<a href='https://www.biorxiv.org/content/10.64898/2025.12.08.692999v1' target='_blank' style='color: #3498db; font-size: 14px;'>",
+                  "<i class='fa fa-external-link-alt'></i> View Preprint on bioRxiv",
+                  "</a>",
+                  "</p>"
+                )
+              )
+            )
+          )
+        )
       )
     )
   )

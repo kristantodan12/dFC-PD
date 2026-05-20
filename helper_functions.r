@@ -192,6 +192,34 @@ plot_horizontal_bar <- function(data, title, xlab = "Count", color = "#4A90E2") 
     )
 }
 
+#' Create a violin plot with overlaid boxplot
+#' 
+#' @param data The dataset
+#' @param column Column name for the distribution
+#' @param title Plot title
+#' @param xlab X-axis label
+#' @param color Violin and box color
+#' @return A plotly object
+plot_violin_box <- function(data, column, title, xlab, color = "#4A90E2") {
+  library(plotly)
+  
+  plot_ly(data, y = ~get(column), type = "violin", 
+          box = list(visible = TRUE),
+          meanline = list(visible = TRUE),
+          fillcolor = color,
+          opacity = 0.6,
+          line = list(color = color),
+          name = "") %>%
+    layout(
+      title = list(text = title, font = list(size = 16)),
+      yaxis = list(title = xlab),
+      xaxis = list(title = "", showticklabels = FALSE),
+      plot_bgcolor = "#f8f9fa",
+      paper_bgcolor = "#f8f9fa",
+      showlegend = FALSE
+    )
+}
+
 #' Create a scatter plot with plotly
 #' 
 #' @param data The dataset

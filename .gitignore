@@ -10,6 +10,13 @@
 # User-specific files
 .Ruserdata
 
+# Environment variables (contains sensitive credentials)
+.Renviron
+.Renviron.local
+
+# Credentials file (contains Nextcloud credentials)
+credentials.R
+
 # OAuth tokens (shinyapps.io deployment)
 .httr-oauth
 .httr-oauth2

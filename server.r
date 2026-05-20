@@ -12,6 +12,9 @@ library(wordcloud2)
 library(scales)
 library(visNetwork)
 library(igraph)
+library(later)
+library(httr)
+library(shinyjs)
 
 
 # Suppress dplyr/tidyr NSE variable binding warnings
@@ -57,6 +60,184 @@ if (file.exists("similarity_matrices.RData")) {
 
 # Define server logic
 server <- function(input, output, session) {
+  
+  # ============================================================================
+  # HOME TAB: NETWORK VISUALIZATION AND NAVIGATION
+  # ============================================================================
+  
+  # Define main navigation nodes
+  main_nodes <- data.frame(
+    id = 1:7, 
+    label = c("Home", "Full Dataset", "Study Overview", "Method Explorer", "Finding Explorer", "Network of Studies", "Contribute"), 
+    value = c(60, 60, 60, 60, 60, 60, 60), 
+    title = "Click to see information", 
+    shape = "dot",
+    color = "#3498db"
+  )
+  
+  # Define edges between nodes
+  main_edges <- data.frame(
+    from = c(1, 1, 1, 1, 1, 1), 
+    to = c(2, 3, 4, 5, 6, 7)
+  )
+  
+  # Render the home network visualization
+  output$network_home <- renderVisNetwork({
+    visNetwork(main_nodes, main_edges, width = "100%") %>%
+      visEvents(click = "function(properties) {
+        var nodeId = properties.nodes[0];
+        if(nodeId) {
+          var label = this.body.data.nodes.get(nodeId).label;
+          Shiny.onInputChange('node_clicked', label);
+        }
+      }")
+  })
+  
+  # Handle node clicks to show descriptions and child nodes
+  observeEvent(input$node_clicked, {
+    # Show child nodes for tabs with subtabs
+    if (input$node_clicked == "Full Dataset") {
+      subnodes <- data.frame(
+        id = 8:10, 
+        label = c("Dataset", "Data Explorer", "Coded Information"), 
+        value = c(30, 30, 30), 
+        title = "Click to see information", 
+        shape = "dot", 
+        color = "#85c1e9"
+      )
+      subedges <- data.frame(from = rep(2, 3), to = 8:10)
+      
+      visNetworkProxy("network_home") %>%
+        visUpdateNodes(nodes = subnodes) %>%
+        visUpdateEdges(edges = subedges)
+        
+    } else if (input$node_clicked == "Method Explorer") {
+      subnodes <- data.frame(
+        id = 11:13, 
+        label = c("MRI Acquisition & Preprocessing", "dFC Analysis", "Clinical Focus & Brain Mapping"), 
+        value = c(30, 30, 30), 
+        title = "Click to see information", 
+        shape = "dot", 
+        color = "#85c1e9"
+      )
+      subedges <- data.frame(from = rep(4, 3), to = 11:13)
+      
+      visNetworkProxy("network_home") %>%
+        visUpdateNodes(nodes = subnodes) %>%
+        visUpdateEdges(edges = subedges)
+        
+    } else if (input$node_clicked == "Finding Explorer") {
+      subnodes <- data.frame(
+        id = 14:17, 
+        label = c("State Features", "State Interpretation", "Proposed Biomarkers", "Limitations"), 
+        value = c(30, 30, 30, 30), 
+        title = "Click to see information", 
+        shape = "dot", 
+        color = "#85c1e9"
+      )
+      subedges <- data.frame(from = rep(5, 4), to = 14:17)
+      
+      visNetworkProxy("network_home") %>%
+        visUpdateNodes(nodes = subnodes) %>%
+        visUpdateEdges(edges = subedges)
+    }
+    
+    # Show description for each node
+    info <- switch(input$node_clicked,
+      "Home" = "Welcome to explore dynamic functional connectivity studies in Parkinson's Disease!",
+      "Full Dataset" = "Check out the complete dataset of dFC studies in Parkinson's Disease extracted from systematic review.",
+      "Study Overview" = "Explore comprehensive statistics and trends across all included studies.",
+      "Method Explorer" = "Dive deep into the methodological approaches used in dFC studies.",
+      "Finding Explorer" = "Discover key findings and patterns across studies.",
+      "Network of Studies" = "Visualize connections between studies based on various similarity metrics.",
+      "Contribute" = "Submit your data to be included in future updates of the DynaPD database.",
+      "Dataset" = "Browse the complete dataset with searchable and filterable tables.",
+      "Coded Information" = "View column information and descriptions for all variables.",
+      "MRI Acquisition & Preprocessing" = "Explore MRI scanner parameters, motion correction, and preprocessing steps.",
+      "dFC Analysis" = "Examine brain mapping methods, parcellation schemes, windowing parameters, and clustering approaches.",
+      "Clinical Focus & Brain Mapping" = "Investigate network regions and areas of interest.",
+      "State Features" = "Explore the number of states, graph measures, and state characteristics.",
+      "State Interpretation" = "View common state descriptions and finding variability.",
+      "Proposed Biomarkers" = "Review consolidated biomarker summaries from dFC studies.",
+      "Limitations" = "Examine the most common study limitations across the field.",
+      "Click on a node to see more information."
+    )
+    
+    output$node_description <- renderUI({
+      wellPanel(
+        style = "background-color: #f0f0f0; padding: 10px; border: 1px solid #ddd;",
+        div(style = "font-size: 18px; font-weight: bold;", input$node_clicked),
+        div(style = "font-size: 14px;", info),
+        div(style = "margin-top: 20px;", actionButton("go_to_tab", "Go to Tab"))
+      )
+    })
+  })
+  
+  # Handle "Go to Tab" button clicks
+  observeEvent(input$go_to_tab, {
+    tab_value <- switch(input$node_clicked,
+      "Full Dataset" = "full_dataset",
+      "Study Overview" = "study_overview",
+      "Method Explorer" = "method_explorer",
+      "Finding Explorer" = "finding_explorer",
+      "Network of Studies" = "network_of_studies",
+      "Contribute" = "contribute",
+      "Dataset" = "Dataset",
+      "Data Explorer" = "Data Explorer",
+      "Coded Information" = "Coded Information",
+      "MRI Acquisition & Preprocessing" = "MRI Acquisition & Preprocessing",
+      "dFC Analysis" = "dFC Analysis",
+      "Clinical Focus & Brain Mapping" = "Clinical Focus & Brain Mapping",
+      "State Features" = "State Features",
+      "State Interpretation" = "State Interpretation",
+      "Proposed Biomarkers" = "Proposed Biomarkers",
+      "Limitations" = "Limitations",
+      "home"
+    )
+    
+    main_tab <- NULL
+    nested_tab <- NULL
+    
+    # Determine the main tab and nested tab based on tab_value
+    if (tab_value %in% c("full_dataset", "Dataset", "Data Explorer", "Coded Information")) {
+      main_tab <- "full_dataset"
+      nested_tab <- tab_value
+    } else if (tab_value %in% c("method_explorer", "MRI Acquisition & Preprocessing", "dFC Analysis", "Clinical Focus & Brain Mapping")) {
+      main_tab <- "method_explorer"
+      nested_tab <- tab_value
+    } else if (tab_value %in% c("finding_explorer", "State Features", "State Interpretation", "Proposed Biomarkers", "Limitations")) {
+      main_tab <- "finding_explorer"
+      nested_tab <- tab_value
+    } else {
+      main_tab <- tab_value
+    }
+    
+    # Update the main tabset panel first
+    updateTabsetPanel(session, "navBar", selected = main_tab)
+    
+    # If there's a nested tab to update, do it after the main tab is selected
+    if (!is.null(nested_tab) && nested_tab != main_tab) {
+      # Use a small delay to ensure the main tab is updated before the nested tab
+      later::later(function() {
+        if (nested_tab %in% c("Dataset", "Coded Information")) {
+          # For Full Dataset nested tabs - need to find the actual tab ID
+          # The navset_card_tab uses nav_panel with title, not value
+          updateTabsetPanel(session, inputId = "full_dataset_tabs", selected = nested_tab)
+        } else if (nested_tab %in% c("MRI Acquisition & Preprocessing", "dFC Analysis", "Clinical Focus & Brain Mapping")) {
+          # For Method Explorer nested tabs
+          updateTabsetPanel(session, inputId = "method_explorer_tabs", selected = nested_tab)
+        } else if (nested_tab %in% c("State Features", "State Interpretation", "Proposed Biomarkers", "Limitations")) {
+          # For Finding Explorer nested tabs
+          updateTabsetPanel(session, inputId = "finding_explorer_tabs", selected = nested_tab)
+        }
+      }, delay = 0.1)
+    }
+  })
+  
+  # ============================================================================
+  # EXISTING SERVER LOGIC CONTINUES BELOW
+  # ============================================================================
+  
   # Findings Explorer: State Features Plots
   output$plot_num_states_findings <- renderPlotly({
     df <- filtered_data_sf() %>% distinct(Label, .keep_all = TRUE)
@@ -371,6 +552,11 @@ server <- function(input, output, session) {
     df <- df %>% filter(N_sample_PD >= input$mri_n_sample_pd_range[1] & 
                          N_sample_PD <= input$mri_n_sample_pd_range[2])
     
+    # Filter by TR (Repetition Time)
+    if (!is.null(input$mri_tr_range)) {
+      df <- df %>% filter(is.na(TR_ms) | (TR_ms >= input$mri_tr_range[1] & TR_ms <= input$mri_tr_range[2]))
+    }
+    
     # Filter by study design
     if (!is.null(input$mri_study_design_filter) && input$mri_study_design_filter != "All") {
       df <- df %>% filter(Study_Design %in% input$mri_study_design_filter)
@@ -447,6 +633,9 @@ server <- function(input, output, session) {
     df <- df %>% filter(N_sample_PD >= input$dfc_n_sample_pd_range[1] & 
                          N_sample_PD <= input$dfc_n_sample_pd_range[2])
     
+    # Filter by TR
+    df <- df %>% filter(is.na(TR_ms) | (TR_ms >= input$dfc_tr_range[1] & TR_ms <= input$dfc_tr_range[2]))
+    
     # Filter by study design
     if (!is.null(input$dfc_study_design_filter) && input$dfc_study_design_filter != "All") {
       df <- df %>% filter(Study_Design %in% input$dfc_study_design_filter)
@@ -509,7 +698,7 @@ server <- function(input, output, session) {
                          line = list(color = "white", width = 2))) %>%
       layout(
         title = list(text = "Studies by Publication Year", font = list(size = 16)),
-        xaxis = list(title = "Year"),
+        xaxis = list(title = "Year", dtick = 1),  # Force integer-only breaks
         yaxis = list(title = "Number of Studies"),
         plot_bgcolor = "#f8f9fa",
         paper_bgcolor = "#f8f9fa",
@@ -532,13 +721,13 @@ server <- function(input, output, session) {
   output$plot_sample_size <- renderPlotly({
     # Use unique studies for sample size distribution
     df <- unique_studies_overview() %>% filter(!is.na(N_sample_PD))
-    plot_histogram(df, "N_sample_PD", "PD Sample Size Distribution", "Sample Size (PD)", "#2ecc71")
+    plot_violin_box(df, "N_sample_PD", "PD Sample Size Distribution", "Sample Size (PD)", "#2ecc71")
   })
   
   output$plot_age_distribution <- renderPlotly({
     # Use unique studies for age distribution
     df <- unique_studies_overview() %>% filter(!is.na(Age_PD_Mean))
-    plot_histogram(df, "Age_PD_Mean", "Mean Age Distribution (PD)", "Mean Age (years)", "#9b59b6")
+    plot_violin_box(df, "Age_PD_Mean", "Mean Age Distribution (PD)", "Mean Age (years)", "#9b59b6")
   })
   
   output$plot_institutions <- renderPlotly({
@@ -550,6 +739,41 @@ server <- function(input, output, session) {
       count(Med_Status_Scan, sort = TRUE) %>%
       rename(name = Med_Status_Scan, count = n)
     plot_horizontal_bar(df, "Medical Status During Scan", "Number of Studies", "#f39c12")
+  })
+  
+  output$plot_paradigm_type <- renderPlotly({
+    # Count Paradigm_Type distribution
+    df <- filtered_data_overview() %>%
+      distinct(Label, Paradigm_Type) %>%
+      filter(!is.na(Paradigm_Type)) %>%
+      count(Paradigm_Type, sort = TRUE) %>%
+      rename(name = Paradigm_Type, count = n)
+    plot_horizontal_bar(df, "Paradigm Type Distribution", "Number of Studies", "#9b59b6")
+  })
+
+  output$plot_sex_distribution <- renderPlotly({
+    # Calculate percentage of males in PD samples
+    # Convert N_Male_PD to numeric, removing "Not Reported" values
+    df <- filtered_data_overview() %>%
+      distinct(Label, .keep_all = TRUE) %>%
+      mutate(
+        N_Male_PD_numeric = suppressWarnings(as.numeric(as.character(N_Male_PD))),
+        N_sample_PD_numeric = suppressWarnings(as.numeric(as.character(N_sample_PD)))
+      ) %>%
+      filter(!is.na(N_Male_PD_numeric) & !is.na(N_sample_PD_numeric) & N_sample_PD_numeric > 0) %>%
+      mutate(Percent_Male = (N_Male_PD_numeric / N_sample_PD_numeric) * 100)
+    
+    if (nrow(df) == 0) return(NULL)
+    
+    # Use the custom helper function to render a violin + boxplot
+    # Keeping the original red color ("#e74c3c") used in your histogram
+    plot_violin_box(
+      df, 
+      "Percent_Male", 
+      "Distribution of % Male in PD Samples", 
+      "% Male", 
+      "#e74c3c"
+    )
   })
     # Deduplicate by Label before splitting institutions
     df <- filtered_data_overview() %>%
@@ -619,19 +843,37 @@ server <- function(input, output, session) {
   output$plot_tr_hist <- renderPlotly({
     # Use unique studies for TR distribution
     df <- unique_studies_mri() %>% filter(!is.na(TR_ms))
-    plot_histogram(df, "TR_ms", "TR Distribution", "TR (ms)", "#3498db")
+    plot_violin_box(df, "TR_ms", "TR Distribution", "TR (ms)", "#3498db")
   })
   
   output$plot_te_hist <- renderPlotly({
     # Use unique studies for TE distribution
     df <- unique_studies_mri() %>% filter(!is.na(TE_ms))
-    plot_histogram(df, "TE_ms", "TE Distribution", "TE (ms)", "#e74c3c")
+    plot_violin_box(df, "TE_ms", "TE Distribution", "TE (ms)", "#e74c3c")
+  })
+  
+  output$plot_age_hc_distribution <- renderPlotly({
+    # Use unique studies for HC age distribution
+    df <- unique_studies_overview() %>% filter(!is.na(Age_HC_mean))
+    plot_violin_box(df, "Age_HC_mean", "Mean Age Distribution (HC)", "Mean Age (years)", "#27ae60")
+  })
+  
+  output$plot_n_hc_distribution <- renderPlotly({
+    # Use unique studies for HC sample size distribution
+    df <- unique_studies_overview() %>% filter(!is.na(N_HC))
+    plot_violin_box(df, "N_HC", "HC Sample Size Distribution", "Sample Size (HC)", "#16a085")
+  })
+  
+  output$plot_volumes_distribution <- renderPlotly({
+    # Use unique studies for number of volumes distribution
+    df <- unique_studies_mri() %>% filter(!is.na(Number_Volumes))
+    plot_violin_box(df, "Number_Volumes", "Number of Volumes Distribution", "Number of Volumes", "#d35400")
   })
   
   output$plot_scan_length_hist <- renderPlotly({
     # Use unique studies for scan length distribution
     df <- unique_studies_mri() %>% filter(!is.na(Length_Scan_Minutes))
-    plot_histogram(df, "Length_Scan_Minutes", "Scan Length Distribution", "Scan Length (minutes)", "#2ecc71")
+    plot_violin_box(df, "Length_Scan_Minutes", "Scan Length Distribution", "Scan Length (minutes)", "#2ecc71")
   })
   
   output$plot_cleaning_steps <- renderPlotly({
@@ -836,6 +1078,9 @@ server <- function(input, output, session) {
       return(NULL)
     }
     
+    # Limit to top 15 most frequent terms
+    word_freq <- word_freq %>% head(15)
+    
     # Adjust size based on frequency range to ensure visibility
     max_freq <- max(word_freq$freq)
     min_freq <- min(word_freq$freq)
@@ -1008,15 +1253,56 @@ server <- function(input, output, session) {
     datatable(info_data, 
               options = list(
                 pageLength = 25, 
-                scrollX = TRUE,
-                scrollY = "600px"
+                scrollX = TRUE
+                #scrollY = "600px"
               ),
               filter = "top",
               rownames = FALSE)
   })
   
-  # ==================== FINDINGS EXPLORER: STATE FINDINGS SUBTAB ====================
-  # UI for State Findings primary focus/specification
+  output$table_data_explorer <- renderDT({
+    # Create a copy of data for Data Explorer with numeric conversions
+    df_explorer <- data %>%
+      mutate(
+        N_Male_PD = suppressWarnings(as.numeric(as.character(N_Male_PD))),
+        N_Male_HC = suppressWarnings(as.numeric(as.character(N_Male_HC)))
+      ) %>%
+      format_for_display()
+    
+    # Convert character columns with reasonable unique counts to factors for dropdown filters
+    categorical_cols <- c("Study_Design", "Primary_Focus", "Focus_Specification", 
+                         "Data_Source", "Data_Source_Institution", "Paradigm_Type", 
+                         "Motion_Params", "Filter_Type", "Brain_Mapping", 
+                         "Parcellation_Methods", "dFC_Methods", "Clustering_Methods",
+                         "PD_Medication_Status", "PD_Cognitive_Status", "PD_Motor_State")
+    
+    df_explorer <- df_explorer %>%
+      mutate(across(all_of(intersect(categorical_cols, names(.))), as.factor))
+    
+    datatable(df_explorer, 
+              extensions = c('FixedHeader', 'FixedColumns'),
+              options = list(
+                pageLength = 25, 
+                scrollX = TRUE,
+                scrollY = "600px",
+                fixedColumns = list(leftColumns = 2),
+                fixedHeader = TRUE,
+                dom = 'frtip',  # f = filter, r = processing, t = table, i = info, p = pagination
+                initComplete = JS(
+                  "function(settings, json) {",
+                  "  var api = this.api();",
+                  "  var header = $(api.table().header()).clone();",
+                  "  var scrollBody = $(api.table().container()).find('.dataTables_scrollBody');",
+                  "}"
+                )
+              ),
+              filter = "top",
+              rownames = FALSE) %>%
+      formatStyle(columns = names(df_explorer), fontSize = '12px')
+  })
+  
+  # ==================== FINDINGS EXPLORER: STATE FEATURES SUBTAB ====================
+  # UI for State Features primary focus/specification
   output$sfind_primary_focus_ui <- renderUI({
     req(input$sfind_study_design_filter)
     if (input$sfind_study_design_filter == "All") {
@@ -1074,35 +1360,16 @@ server <- function(input, output, session) {
     df
   })
   # Word Cloud for State Descriptions
-  output$state_desc_wordcloud <- renderWordcloud2({
-    df <- filtered_data_sfind() %>% distinct(Label, .keep_all = TRUE)
-    if (nrow(df) == 0) return(NULL)
-    # Combine all Identified_States_Description text, split into words, count frequency
-    words <- df %>%
-      filter(!is.na(Identified_States_Description)) %>%
-      pull(Identified_States_Description) %>%
-      paste(collapse = " ") %>%
-      tolower() %>%
-      # Replace terminology before processing
-      str_replace_all("segregated", "sparsely-connected") %>%
-      str_replace_all("integrated", "strongly-connected") %>%
-      str_replace_all("segregation", "sparsely-connected") %>%
-      str_replace_all("integration", "strongly-connected") %>%
-      str_replace_all("[[:punct:]]", " ") %>%
-      str_split("\\s+") %>%
-      unlist() %>%
-      trimws()
-    word_freq <- as.data.frame(table(words), stringsAsFactors = FALSE)
-    word_freq <- word_freq %>% filter(words != "" & nchar(words) > 2) %>% arrange(desc(Freq))
-    if (nrow(word_freq) == 0) return(NULL)
-    wordcloud2(word_freq, size = 0.7, color = "random-dark", backgroundColor = "white")
-  })
-
   # Reactive for findings variability summary
   findings_variability_summary <- reactive({
     df <- filtered_data_sfind() %>% distinct(Label, .keep_all = TRUE)
     if (input$findings_variability_type == "state") {
-      df %>% group_by(State_Finding_Category) %>% summarise(n = n()) %>% arrange(desc(n))
+      # Use State_Pattern_Conclusion instead of State_Finding_Category
+      df %>% 
+        filter(!is.na(State_Pattern_Conclusion) & State_Pattern_Conclusion != "") %>%
+        group_by(State_Pattern_Conclusion) %>% 
+        summarise(n = n()) %>% 
+        arrange(desc(n))
     } else {
       df %>% group_by(Transition_Finding_Category) %>% summarise(n = n()) %>% arrange(desc(n))
     }
@@ -1114,11 +1381,13 @@ server <- function(input, output, session) {
     if (nrow(plot_df) == 0) return(NULL)
     # Choose correct y variable
     if (input$findings_variability_type == "state") {
-      yvar <- plot_df$State_Finding_Category
-      ylab <- "State Finding Category"
+      yvar <- plot_df$State_Pattern_Conclusion
+      ylab <- "State Pattern Conclusion"
+      plot_title <- "State Pattern Conclusions"
     } else {
       yvar <- plot_df$Transition_Finding_Category
       ylab <- "Transition Finding Category"
+      plot_title <- "Finding Variability by Category"
     }
     p <- plot_ly(
       data = plot_df,
@@ -1126,12 +1395,15 @@ server <- function(input, output, session) {
       y = ~reorder(yvar, n),
       type = 'bar',
       orientation = 'h',
-      marker = list(color = '#9b59b6'),
+      marker = list(color = '#3498db'),
       source = "findings_var_plot"
     ) %>% layout(
       yaxis = list(title = ylab),
-      xaxis = list(title = 'Number of Papers'),
-      title = 'Finding Variability by Category'
+      xaxis = list(title = 'Number of Studies'),
+      title = list(text = plot_title, font = list(size = 16)),
+      plot_bgcolor = "#f8f9fa",
+      paper_bgcolor = "#f8f9fa",
+      margin = list(l = 200)
     )
     plotly::event_register(p, 'plotly_click')
     p
@@ -1142,7 +1414,7 @@ server <- function(input, output, session) {
     df <- filtered_data_sfind() %>% distinct(Label, .keep_all = TRUE)
     click <- plotly::event_data("plotly_click", source = "findings_var_plot")
     if (input$findings_variability_type == "state") {
-      col_cat <- "State_Finding_Category"
+      col_cat <- "State_Pattern_Conclusion"
       col_text <- "State_Pattern_Conclusion"
     } else {
       col_cat <- "Transition_Finding_Category"
@@ -1443,5 +1715,128 @@ server <- function(input, output, session) {
       }")
     
     vis_net
+  })
+  
+  # ============================================================================
+  # CONTRIBUTE TAB: CSV TEMPLATE DOWNLOAD AND FILE UPLOAD
+  # ============================================================================
+  
+  # Download handler for CSV template
+  output$download_template <- downloadHandler(
+    filename = function() {
+      "DynaPD_Submission_Template.csv"
+    },
+    content = function(file) {
+      # Create empty dataframe with same columns as the main dataset
+      template <- data.frame(matrix(ncol = ncol(data), nrow = 0))
+      colnames(template) <- colnames(data)
+      
+      # Write to CSV
+      write.csv(template, file, row.names = FALSE)
+    }
+  )
+  
+  # File upload and submission to WebDAV cloud storage
+  observeEvent(input$submit_contribution, {
+    # Require that a file has been uploaded
+    req(input$upload_contribution)
+    
+    # Load credentials from file
+    if (file.exists("credentials.R")) {
+      source("credentials.R")
+      nc_user <- NEXTCLOUD_USER
+      nc_pass <- NEXTCLOUD_PASS
+    } else {
+      # Fallback to environment variables for backward compatibility
+      nc_user <- Sys.getenv("NEXTCLOUD_USER")
+      nc_pass <- Sys.getenv("NEXTCLOUD_PASS")
+    }
+    
+    if (nc_user == "" || nc_pass == "") {
+      showNotification(
+        "Error: Nextcloud credentials not found. Please ensure credentials.R file exists or environment variables are set.",
+        type = "error",
+        duration = 10
+      )
+      return()
+    }
+    
+    # Show processing notification
+    showNotification("Processing your submission...", type = "message", duration = 3)
+    
+    # Get the uploaded file info
+    upload_info <- input$upload_contribution
+    
+    # Generate unique filename with timestamp
+    timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+    file_ext <- tools::file_ext(upload_info$name)
+    unique_filename <- paste0("contribution_", timestamp, ".", file_ext)
+    
+    # WebDAV endpoint
+    webdav_url <- paste0(
+      "https://cloud.uol.de/remote.php/dav/files/wowi8711/DynaPD/Contribution/",
+      unique_filename
+    )
+    
+    # Try to upload the file
+    tryCatch({
+      # Read the file content
+      file_content <- readBin(upload_info$datapath, "raw", file.info(upload_info$datapath)$size)
+      
+      # Upload using httr::PUT with basic authentication
+      response <- httr::PUT(
+        url = webdav_url,
+        body = file_content,
+        httr::authenticate(user = nc_user, password = nc_pass, type = "basic"),
+        httr::content_type("text/csv"),
+        httr::add_headers(
+          "OCS-APIRequest" = "true"
+        )
+      )
+      
+      # Check response status
+      if (httr::status_code(response) %in% c(200, 201, 204)) {
+        # Success - clear the file input
+        shinyjs::reset("upload_contribution")
+        
+        # Show success notification
+        showNotification(
+          "Thank you for your contribution! Our team will manually verify the data before publishing it live.",
+          type = "message",
+          duration = 8
+        )
+      } else {
+        # Upload failed - get more details
+        status <- httr::status_code(response)
+        error_msg <- paste0("Upload failed with status code: ", status)
+        
+        # Add specific guidance for common errors
+        if (status == 401) {
+          error_msg <- paste0(error_msg, 
+            "\n\nAuthentication failed. Please check:\n",
+            "1. Your credentials in .Renviron file\n",
+            "2. You may need to generate an 'App Password' in Nextcloud settings\n",
+            "3. Restart R session after updating .Renviron")
+        } else if (status == 404) {
+          error_msg <- paste0(error_msg, " - Folder path not found")
+        } else if (status == 403) {
+          error_msg <- paste0(error_msg, " - Permission denied")
+        }
+        
+        showNotification(
+          paste0(error_msg, "\n\nContact daniel.kristanto@uol.de for assistance."),
+          type = "error",
+          duration = 15
+        )
+      }
+    }, error = function(e) {
+      # Handle errors
+      showNotification(
+        paste0("Error during upload: ", e$message, 
+               ". Please check your internet connection and try again."),
+        type = "error",
+        duration = 10
+      )
+    })
   })
 }

@@ -10,13 +10,15 @@ library(patchwork)  # For combining plots
 library(scales)
 library(ggalluvial) # For Sankey/Alluvial plots
 library(networkD3) # For interactive Sankey plots
+library(ggsci)      # For Lancet journal color palette
+library(ggdist)     # For raincloud plots
 
-# Set theme for publication-quality figures (Arial + minimal)
-# Note: On Windows, if Arial causes issues, it will fall back to sans
-theme_set(theme_minimal(base_size = 12, base_family = "sans"))
+# Set theme for publication-quality figures with Lancet styling
+# Using theme_bw as base for clean, professional appearance
+theme_set(theme_bw(base_size = 12, base_family = "sans"))
 
 # Define output directory for figures
-output_dir <- "C:/Users/danie/Documents/Projects/Dempark/Review/Manuscript/Figures"
+output_dir <- "C:/Users/danie/Documents/Projects/Dempark/Review/Manuscript/Figures/Revised"
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
@@ -75,7 +77,7 @@ palette_colors <- brewer.pal(8, "Pastel1")
 
 # Create the figure
 fig2_completeness <- ggplot(plot_data, aes(x = NA_Percent, y = Variable)) +
-  geom_col(fill = palette_colors[2], width = 0.7) +
+  geom_col(width = 0.7, fill = "#00468BFF") +
   geom_text(aes(label = sprintf("%.1f%%", NA_Percent)), 
             hjust = -0.1, size = 5, fontface = "bold") +
   scale_x_continuous(
@@ -89,16 +91,16 @@ fig2_completeness <- ggplot(plot_data, aes(x = NA_Percent, y = Variable)) +
     x = "Missing Data (%)",
     y = NULL
   ) +
-  theme_minimal(base_size = 16, base_family = "sans") +
+  theme_bw(base_size = 16, base_family = "sans") +
   theme(
     plot.title = element_text(face = "bold", size = 18, hjust = 0),
     plot.subtitle = element_text(size = 14, color = "gray40", hjust = 0),
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_line(color = "gray90"),
-    axis.text.y = element_text(size = 14, face = "bold"),
-    axis.text.x = element_text(size = 14),
-    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.text.y = element_text(size = 18, face = "bold"),
+    axis.text.x = element_text(size = 18),
+    axis.title.x = element_text(size = 18, face = "bold"),
     plot.margin = margin(15, 25, 15, 15)
   )
 
@@ -162,16 +164,16 @@ plot_A <- ggplot(plotA_df, aes(x = Data_Source_Std, y = n, fill = Data_Source_St
   geom_col(width = 0.65) +
   geom_text(aes(label = scales::comma(n)), vjust = -0.3, size = 5, fontface = "bold") +
   scale_fill_manual(values = c(
-    "Public" = palette_ds[2],
-    "Private" = palette_ds[3],
-    "Other/Unspecified" = palette_ds[1]
+    "Public" = "#00468BFF",  # Lancet blue
+    "Private" = "#808080",   # Grey for negative connotation
+    "Other/Unspecified" = "#00468BFF"  # Lancet blue
   )) +
   labs(title = "A. Data Source Type", x = NULL, y = "Number of Studies", fill = NULL) +
-  theme_minimal(base_size = 16, base_family = "sans") +
+  theme_bw(base_size = 16, base_family = "sans") +
   theme(
     plot.title = element_text(face = "bold", size = 18),
-    axis.text.x = element_text(size = 14),
-    axis.text.y = element_text(size = 14),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
     plot.title.position = "plot",
     legend.position = "none",
     plot.margin = margin(10, 10, 10, 10)
@@ -197,13 +199,19 @@ plot_B <- ggplot(private_df, aes(x = n, y = reorder(Data_Availability_Std, n), f
   geom_text(aes(label = scales::comma(n)), hjust = -0.1, size = 5, fontface = "bold") +
   scale_y_discrete(position = "right") +
   scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
-  scale_fill_manual(values = setNames(palette_ds[c(4,5,6,7,8)], unique(private_df$Data_Availability_Std))) +
+  scale_fill_manual(values = c(
+    "Publicly available" = "#00468BFF",  # Lancet blue for positive
+    "Upon request" = "#00468BFF",        # Lancet blue
+    "Will be made available" = "#00468BFF",  # Lancet blue
+    "Not reported" = "#808080",          # Grey for negative
+    "Other" = "#808080"                  # Grey for negative
+  )) +
   labs(title = "B. Data Availability (Private)", x = "Number of Studies", y = NULL, fill = NULL) +
-  theme_minimal(base_size = 16, base_family = "sans") +
+  theme_bw(base_size = 16, base_family = "sans") +
   theme(
     plot.title = element_text(face = "bold", size = 18),
-    axis.text.x = element_text(size = 14),
-    axis.text.y = element_text(size = 13),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 17),
     legend.position = "none",
     plot.margin = margin(10, 10, 10, 10)
   )
@@ -221,21 +229,21 @@ inst_df <- ds %>%
   arrange(n)
 
 plot_C <- ggplot(inst_df, aes(x = n, y = reorder(source, n))) +
-  geom_col(fill = palette_ds[2], width = 0.65) +
+  geom_col(width = 0.65, fill = "#00468BFF") +
   geom_text(aes(label = scales::comma(n)), hjust = -0.1, size = 5, fontface = "bold") +
   labs(title = "C. Top 10 Data Source Institutions/Databases", x = "Number of Studies", y = NULL) +
   scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
   scale_y_discrete(position = "right") +
-  theme_minimal(base_size = 16, base_family = "sans") +
+  theme_bw(base_size = 16, base_family = "sans") +
   theme(
     plot.title = element_text(face = "bold", size = 18),
-    axis.text.y = element_text(size = 13),
-    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 17),
+    axis.text.x = element_text(size = 18),
     plot.margin = margin(10, 10, 10, 10)
   )
 
 # Combine and save
-combined_ds <- plot_A + (plot_B / plot_C) + plot_layout(widths = c(1, 1))
+combined_ds <- plot_A + (plot_B / plot_C) + plot_layout(widths = c(1.3, 1))
 
 ggsave(file.path(output_dir, "Figure3_Data_Sources.png"), combined_ds,
        width = 11, height = 8.5, dpi = 300, bg = "white")
@@ -276,9 +284,10 @@ links <- do.call(rbind, lapply(1:(length(sankey_cols)-1), function(i) {
   )
 }))
 
-# Pastel colors for nodes
-pastel_palette <- RColorBrewer::brewer.pal(8, "Pastel1")
-node_colors <- rep(pastel_palette, length.out = nrow(nodes))
+# Lancet colors for nodes
+lancet_colors <- c("#00468BFF", "#ED0000FF", "#42B540FF", "#0099B4FF", 
+                   "#925E9FFF", "#FDAF91FF", "#AD002AFF", "#ADB6B6FF", "#1B1919FF")
+node_colors <- rep(lancet_colors, length.out = nrow(nodes))
 
 # Custom axis/column titles
 axis_titles <- c("Study Design", "Primary Focus", "Specific Focus", "Paradigm")
@@ -404,44 +413,98 @@ palette_pastel <- brewer.pal(8, "Pastel1")
 
 # ---- Panel A: Acquisition Variability ----
 
-# Plot A1: TR Distribution
+# Plot A1: TR Distribution - RAINCLOUD PLOT
 plot_tr <- unique_studies_df %>%
   filter(!is.na(TR_ms)) %>%
-  ggplot(aes(x = TR_ms)) +
-  geom_histogram(fill = palette_pastel[1], color = "white", binwidth = 200) +
-  geom_text(stat = "bin", binwidth = 200, aes(label = after_stat(count)), 
-            vjust = -0.5, size = 5) +
-  labs(
-    title = "A. TR Distribution",
-    x = "TR (ms)",
-    y = "Count of Studies"
+  ggplot(aes(x = TR_ms, y = 0)) +
+  # Half-violin density (right side)
+  ggdist::stat_halfeye(
+    adjust = 1,
+    width = 0.6,
+    justification = -0.2,
+    .width = 0,
+    point_colour = NA,
+    fill = "#00468BFF"  # Lancet blue
   ) +
-  theme_minimal(base_size = 16) +
+  # Boxplot (narrow, positioned below the violin)
+  geom_boxplot(
+    width = 0.15,
+    position = position_nudge(y = -0.15),
+    outlier.shape = NA,
+    fill = "#808080",  # Grey
+    alpha = 0.7
+  ) +
+  # Raw data points (jittered dots)
+  geom_jitter(
+    width = 0,
+    height = 0.05,
+    alpha = 0.5,
+    size = 2,
+    color = "#42B540FF"  # Lancet green
+  ) +
+  scale_fill_lancet() +
+  scale_color_lancet() +
+  labs(
+    title = "A. TR Distribution (Raincloud Plot)",
+    x = "Repetition Time (TR) in ms",
+    y = NULL
+  ) +
+  theme_bw(base_size = 16) +
   theme(
     plot.title = element_text(face = "bold", size = 20),
-    axis.title = element_text(size = 18, face = "bold"),
-    axis.text = element_text(size = 16),
-    panel.grid.minor = element_blank()
+    axis.title = element_text(size = 20, face = "bold"),
+    axis.text.x = element_text(size = 19),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank()
   )
 
-# Plot A2: Scan Length Distribution
+# Plot A2: Scan Length Distribution - RAINCLOUD PLOT
 plot_scan_length <- unique_studies_df %>%
   filter(!is.na(Length_Scan_Minutes)) %>%
-  ggplot(aes(x = Length_Scan_Minutes)) +
-  geom_histogram(fill = palette_pastel[2], color = "white", binwidth = 2) +
-  geom_text(stat = "bin", binwidth = 2, aes(label = after_stat(count)), 
-            vjust = -0.5, size = 5) +
-  labs(
-    title = "B. Scan Length Distribution",
-    x = "Scan Length (minutes)",
-    y = "Count of Studies"
+  ggplot(aes(x = Length_Scan_Minutes, y = 0)) +
+  # Half-violin density (right side)
+  ggdist::stat_halfeye(
+    adjust = 1,
+    width = 0.6,
+    justification = -0.2,
+    .width = 0,
+    point_colour = NA,
+    fill = "#00468BFF"  # Lancet blue
   ) +
-  theme_minimal(base_size = 16) +
+  # Boxplot (narrow, positioned below the violin)
+  geom_boxplot(
+    width = 0.15,
+    position = position_nudge(y = -0.15),
+    outlier.shape = NA,
+    fill = "#808080",  # Grey
+    alpha = 0.7
+  ) +
+  # Raw data points (jittered dots)
+  geom_jitter(
+    width = 0,
+    height = 0.05,
+    alpha = 0.5,
+    size = 2,
+    color = "#42B540FF"  # Lancet green
+  ) +
+  scale_fill_lancet() +
+  scale_color_lancet() +
+  labs(
+    title = "B. Scan Length Distribution (Raincloud Plot)",
+    x = "Scan Length (minutes)",
+    y = NULL
+  ) +
+  theme_bw(base_size = 16) +
   theme(
     plot.title = element_text(face = "bold", size = 20),
-    axis.title = element_text(size = 18, face = "bold"),
-    axis.text = element_text(size = 16),
-    panel.grid.minor = element_blank()
+    axis.title = element_text(size = 20, face = "bold"),
+    axis.text.x = element_text(size = 19),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank()
   )
 
 # ---- Panel B: Denoising Pipeline "Divergence" ----
@@ -471,7 +534,7 @@ data_denoising_combined <- bind_rows(data_motion_params, data_denoising_binary) 
 plot_denoising_variability <- data_denoising_combined %>%
   mutate(Method = factor(Method, levels = rev(Method))) %>%  # Reverse for top-to-bottom ordering
   ggplot(aes(x = Count, y = Method)) +
-  geom_col(fill = palette_pastel[3], width = 0.7) +
+  geom_col(width = 0.7, fill = "#00468BFF") +
   geom_text(aes(label = Count), hjust = -0.2, size = 5.5) +
   scale_x_continuous(expand = expansion(mult = c(0, 0.15))) +
   labs(
@@ -479,12 +542,12 @@ plot_denoising_variability <- data_denoising_combined %>%
     x = "Count of Studies",
     y = NULL
   ) +
-  theme_minimal(base_size = 16) +
+  theme_bw(base_size = 16) +
   theme(
     plot.title = element_text(face = "bold", size = 20),
-    axis.title = element_text(size = 18, face = "bold"),
-    axis.text.y = element_text(size = 15),
-    axis.text.x = element_text(size = 16),
+    axis.title = element_text(size = 20, face = "bold"),
+    axis.text.y = element_text(size = 18),
+    axis.text.x = element_text(size = 19),
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank()
   )
@@ -524,7 +587,7 @@ plot_parcellation <- unique_studies_df %>%
   mutate(Parcellation_Abbr = reorder(Parcellation_Abbr, n)) %>% 
   
   ggplot(aes(x = n, y = Parcellation_Abbr)) +
-  geom_col(fill = palette_pastel[4], width = 0.7) +
+  geom_col(width = 0.7, fill = "#00468BFF") +
   geom_text(aes(label = n), hjust = -0.2, size = 5.5) +
   scale_x_continuous(expand = expansion(mult = c(0, 0.15))) +
   labs(
@@ -532,12 +595,12 @@ plot_parcellation <- unique_studies_df %>%
     x = "Count of Studies",
     y = NULL
   ) +
-  theme_minimal(base_size = 16) +
+  theme_bw(base_size = 16) +
   theme(
     plot.title = element_text(face = "bold", size = 20),
-    axis.title = element_text(size = 18, face = "bold"),
-    axis.text.y = element_text(size = 14),
-    axis.text.x = element_text(size = 16),
+    axis.title = element_text(size = 20, face = "bold"),
+    axis.text.y = element_text(size = 17),
+    axis.text.x = element_text(size = 19),
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank()
   )
@@ -590,7 +653,7 @@ data_for_bubble <- unique_studies_df %>%
 
 plot_dfc_cluster_bubble <- data_for_bubble %>%
   ggplot(aes(x = dFC_Methods_Abbr, y = Clustering_Methods_Abbr, size = n)) +
-  geom_count(alpha = 0.7, color = palette_pastel[5]) +
+  geom_point(alpha = 0.7, color = "#00468BFF") +  # Lancet blue
   scale_size_area(max_size = 20) +
   labs(
     title = "E. Convergence on dFC & Clustering",
@@ -598,12 +661,12 @@ plot_dfc_cluster_bubble <- data_for_bubble %>%
     y = "Clustering Method",
     size = "Count"
   ) +
-  theme_minimal(base_size = 16) +
+  theme_bw(base_size = 16) +
   theme(
     plot.title = element_text(face = "bold", size = 20),
-    axis.title = element_text(size = 18, face = "bold"),
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 14),
-    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 20, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 17),
+    axis.text.y = element_text(size = 17),
     legend.title = element_text(size = 16, face = "bold"),
     legend.text = element_text(size = 14),
     panel.grid.minor = element_blank()
@@ -619,7 +682,7 @@ data_for_network_count <- unique_studies_df %>%
 
 plot_network_count <- data_for_network_count %>%
   ggplot(aes(x = Number_Networks_Num, y = n)) +
-  geom_col(fill = palette_pastel[6], width = 0.7) +
+  geom_col(width = 0.7, fill = "#00468BFF") +
   geom_text(aes(label = n), vjust = -0.5, size = 5.5) +
   scale_x_continuous(breaks = sort(unique(data_for_network_count$Number_Networks_Num))) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
@@ -628,11 +691,12 @@ plot_network_count <- data_for_network_count %>%
     x = "Number of Networks",
     y = "Count of Studies"
   ) +
-  theme_minimal(base_size = 16) +
+  theme_bw(base_size = 16) +
   theme(
     plot.title = element_text(face = "bold", size = 20),
-    axis.title = element_text(size = 18, face = "bold"),
-    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20, face = "bold"),
+    axis.text.x = element_text(size = 19),
+    axis.text.y = element_text(size = 18),
     panel.grid.minor = element_blank()
   )
 
@@ -681,7 +745,7 @@ plot_num_states <- unique_studies_fig6 %>%
   filter(!is.na(Number_States)) %>%
   count(Number_States) %>%
   ggplot(aes(x = n, y = reorder(as.factor(Number_States), Number_States))) +
-  geom_col(fill = palette_fig6[1], width = 0.7) +
+  geom_col(width = 0.7, fill = "#00468BFF") +
   geom_text(aes(label = n), hjust = -0.2, size = 5, fontface = "bold") +
   scale_x_continuous(expand = expansion(mult = c(0, 0.15))) +
   labs(
@@ -689,11 +753,12 @@ plot_num_states <- unique_studies_fig6 %>%
     x = "Count of Studies",
     y = "Number of States"
   ) +
-  theme_minimal(base_size = 16, base_family = "sans") +
+  theme_bw(base_size = 16, base_family = "sans") +
   theme(
     plot.title = element_text(face = "bold", size = 18),
-    axis.title = element_text(size = 16, face = "bold"),
-    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 18, face = "bold"),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 17),
     panel.grid.minor = element_blank(),
     panel.grid.major.y = element_blank()
   )
@@ -708,7 +773,7 @@ plot_state_features <- unique_studies_fig6 %>%
   slice_head(n = 8) %>%
   mutate(State_Features = str_to_title(State_Features)) %>%
   ggplot(aes(x = n, y = reorder(State_Features, n))) +
-  geom_col(fill = palette_fig6[2], width = 0.7) +
+  geom_col(width = 0.7, fill = "#00468BFF") +
   geom_text(aes(label = n), hjust = -0.2, size = 5, fontface = "bold") +
   scale_x_continuous(expand = expansion(mult = c(0, 0.15))) +
   labs(
@@ -716,12 +781,13 @@ plot_state_features <- unique_studies_fig6 %>%
     x = "Count of Studies",
     y = NULL
   ) +
-  theme_minimal(base_size = 16, base_family = "sans") +
+  theme_bw(base_size = 16, base_family = "sans") +
   theme(
     plot.title = element_text(face = "bold", size = 18),
-    axis.title = element_text(size = 16, face = "bold"),
-    axis.text.y = element_text(size = 13),
-    axis.text.x = element_text(size = 14),
+    axis.title = element_text(size = 18, face = "bold"),
+    axis.text.y = element_text(size = 17),
+    axis.text.x = element_text(size = 18),
+    legend.position = "none",
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank()
   )
@@ -747,7 +813,7 @@ plot_integration_findings <- unique_studies_fig6 %>%
   ) %>%
   count(State_Finding_Category) %>%
   ggplot(aes(x = n, y = reorder(State_Finding_Category, n))) +
-  geom_col(fill = palette_fig6[3], width = 0.7) +
+  geom_col(width = 0.7, fill = "#00468BFF") +
   geom_text(aes(label = n), hjust = -0.2, size = 5, fontface = "bold") +
   scale_x_continuous(expand = expansion(mult = c(0, 0.15))) +
   labs(
@@ -755,12 +821,12 @@ plot_integration_findings <- unique_studies_fig6 %>%
     x = "Count of Studies",
     y = NULL
   ) +
-  theme_minimal(base_size = 16, base_family = "sans") +
+  theme_bw(base_size = 16, base_family = "sans") +
   theme(
     plot.title = element_text(face = "bold", size = 18),
-    axis.title = element_text(size = 16, face = "bold"),
-    axis.text.y = element_text(size = 13, lineheight = 0.9),
-    axis.text.x = element_text(size = 14),
+    axis.title = element_text(size = 18, face = "bold"),
+    axis.text.y = element_text(size = 17, lineheight = 0.9),
+    axis.text.x = element_text(size = 18),
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank(),
     plot.margin = margin(10, 10, 10, 40)
@@ -787,7 +853,7 @@ plot_transition_findings <- unique_studies_fig6 %>%
   ) %>%
   count(Transition_Finding_Category) %>%
   ggplot(aes(x = n, y = reorder(Transition_Finding_Category, n))) +
-  geom_col(fill = palette_fig6[4], width = 0.7) +
+  geom_col(width = 0.7, fill = "#00468BFF") +
   geom_text(aes(label = n), hjust = -0.2, size = 5, fontface = "bold") +
   scale_x_continuous(expand = expansion(mult = c(0, 0.15))) +
   labs(
@@ -795,12 +861,13 @@ plot_transition_findings <- unique_studies_fig6 %>%
     x = "Count of Studies",
     y = NULL
   ) +
-  theme_minimal(base_size = 16, base_family = "sans") +
+  theme_bw(base_size = 16, base_family = "sans") +
   theme(
     plot.title = element_text(face = "bold", size = 18),
-    axis.title = element_text(size = 16, face = "bold"),
-    axis.text.y = element_text(size = 13, lineheight = 0.9),
-    axis.text.x = element_text(size = 14),
+    axis.title = element_text(size = 18, face = "bold"),
+    axis.text.y = element_text(size = 17, lineheight = 0.9),
+    axis.text.x = element_text(size = 18),
+    legend.position = "none",
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank(),
     plot.margin = margin(10, 10, 10, 40)
@@ -817,12 +884,12 @@ plot_limitations <- unique_studies_fig6 %>%
       str_detect(Limitations, "small sample") ~ "Small Sample",
       str_detect(Limitations, "head-motion|motion artifact") ~ "Motion Artifacts",
       str_detect(Limitations, "on state only") ~ "ON State Only",
-      str_detect(Limitations, "cross-sectional") ~ "Cross-Sectional\nDesign",
-      str_detect(Limitations, "disease duration") ~ "Disease Duration\nUncontrolled",
-      str_detect(Limitations, "short scan|limited temporal") ~ "Short Scan/\nLimited Resolution",
-      str_detect(Limitations, "methodological") ~ "Methodological\nIssues",
+      str_detect(Limitations, "cross-sectional") ~ "Cross-Sectional Design",
+      str_detect(Limitations, "disease duration") ~ "Disease Duration Uncontrolled",
+      str_detect(Limitations, "short scan|limited temporal") ~ "Short Scan/Limited Resolution",
+      str_detect(Limitations, "methodological") ~ "Methodological Issues",
       str_detect(Limitations, "off state only") ~ "OFF State Only",
-      str_detect(Limitations, "no.*control|no.*hc") ~ "No Healthy\nControls",
+      str_detect(Limitations, "no.*control|no.*hc") ~ "No Healthy Controls",
       str_detect(Limitations, "heterogeneity|pd heterogeneity") ~ "PD Heterogeneity",
       TRUE ~ str_to_title(Limitations)
     )
@@ -831,7 +898,7 @@ plot_limitations <- unique_studies_fig6 %>%
   count(Limitations_Abbr, sort = TRUE) %>%
   slice_head(n = 10) %>%
   ggplot(aes(x = n, y = reorder(Limitations_Abbr, n))) +
-  geom_col(fill = palette_fig6[5], width = 0.7) +
+  geom_col(width = 0.7, fill = "#00468BFF") +
   geom_text(aes(label = n), hjust = -0.2, size = 5, fontface = "bold") +
   scale_x_continuous(expand = expansion(mult = c(0, 0.15))) +
   scale_y_discrete(position = "right") +
@@ -840,12 +907,12 @@ plot_limitations <- unique_studies_fig6 %>%
     x = "Count of Studies",
     y = NULL
   ) +
-  theme_minimal(base_size = 16, base_family = "sans") +
+  theme_bw(base_size = 16, base_family = "sans") +
   theme(
     plot.title = element_text(face = "bold", size = 18),
-    axis.title = element_text(size = 16, face = "bold"),
-    axis.text.y = element_text(size = 13, lineheight = 0.9),
-    axis.text.x = element_text(size = 14),
+    axis.title = element_text(size = 18, face = "bold"),
+    axis.text.y = element_text(size = 17, lineheight = 0.9),
+    axis.text.x = element_text(size = 18),
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank(),
     plot.margin = margin(10, 40, 10, 10)
